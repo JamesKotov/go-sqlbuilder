@@ -21,6 +21,8 @@ const (
 	RightOuterJoin JoinOption = "RIGHT OUTER"
 	FullJoin       JoinOption = "FULL"
 	FullOuterJoin  JoinOption = "FULL OUTER"
+	AllInnerJoin   JoinOption = "ALL INNER"
+	ArrayJoin      JoinOption = "ARRAY"
 )
 
 // NewSelectBuilder creates a new SELECT builder.
@@ -44,19 +46,20 @@ func newSelectBuilder() *SelectBuilder {
 type SelectBuilder struct {
 	Cond
 
-	distinct    bool
-	tables      []string
-	selectCols  []string
-	joinOptions []JoinOption
-	joinTables  []string
-	joinExprs   [][]string
-	whereExprs  []string
-	havingExprs []string
-	groupByCols []string
-	orderByCols []string
-	order       string
-	limit       int
-	offset      int
+	distinct          bool
+	tables            []string
+	selectCols        []string
+	joinOptions       []JoinOption
+	joinTables        []string
+	joinExprsOperator []string
+	joinExprs         [][]string
+	whereExprs        []string
+	havingExprs       []string
+	groupByCols       []string
+	orderByCols       []string
+	order             string
+	limit             int
+	offset            int
 
 	args *Args
 }
@@ -84,7 +87,15 @@ func (sb *SelectBuilder) From(table ...string) *SelectBuilder {
 // It builds a JOIN expression like
 //     JOIN table ON onExpr[0] AND onExpr[1] ...
 func (sb *SelectBuilder) Join(table string, onExpr ...string) *SelectBuilder {
-	return sb.JoinWithOption("", table, onExpr...)
+	return sb.joinWithOption("", table, "ON", onExpr...)
+}
+
+// JoinUsing sets expressions of JOIN in SELECT with USING operator (for Clickhouse)
+//
+// It builds a JOIN expression like
+//     JOIN table USING col1, col2 ...
+func (sb *SelectBuilder) JoinUsing(table string, onExpr ...string) *SelectBuilder {
+	return sb.joinWithOption("", table, "USING", onExpr...)
 }
 
 // JoinWithOption sets expressions of JOIN with an option.
@@ -98,8 +109,39 @@ func (sb *SelectBuilder) Join(table string, onExpr ...string) *SelectBuilder {
 //     - RightJoin: RIGHT JOIN
 //     - RightOuterJoin: RIGHT OUTER JOIN
 func (sb *SelectBuilder) JoinWithOption(option JoinOption, table string, onExpr ...string) *SelectBuilder {
+	return sb.joinWithOption(option, table, "ON", onExpr...)
+}
+
+// JoinWithOptionUsing sets expressions of JOIN with an option and with USING operator (for Clickhouse)
+//
+// It builds a JOIN expression like
+//     option JOIN table USING col1, col2 ...
+//
+// Here is a list of supported options.
+//     - LeftJoin: LEFT JOIN
+//     - LeftOuterJoin: LEFT OUTER JOIN
+//     - RightJoin: RIGHT JOIN
+//     - RightOuterJoin: RIGHT OUTER JOIN
+func (sb *SelectBuilder) JoinWithOptionUsing(option JoinOption, table string, onExpr ...string) *SelectBuilder {
+	return sb.joinWithOption(option, table, "USING", onExpr...)
+}
+
+// joinWithOption sets expressions of JOIN with an option and conditions operator
+//
+// It builds a JOIN expression like
+//     option JOIN table ON onExpr[0] AND onExpr[1] ...
+//     or
+//     option JOIN table USING col1, col2 ...
+//
+// Here is a list of supported options.
+//     - LeftJoin: LEFT JOIN
+//     - LeftOuterJoin: LEFT OUTER JOIN
+//     - RightJoin: RIGHT JOIN
+//     - RightOuterJoin: RIGHT OUTER JOIN
+func (sb *SelectBuilder) joinWithOption(option JoinOption, table string, operator string, onExpr ...string) *SelectBuilder {
 	sb.joinOptions = append(sb.joinOptions, option)
 	sb.joinTables = append(sb.joinTables, table)
+	sb.joinExprsOperator = append(sb.joinExprsOperator, operator)
 	sb.joinExprs = append(sb.joinExprs, onExpr)
 	return sb
 }
@@ -199,8 +241,17 @@ func (sb *SelectBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{
 		buf.WriteString(sb.joinTables[i])
 
 		if exprs := sb.joinExprs[i]; len(exprs) > 0 {
-			buf.WriteString(" ON ")
-			buf.WriteString(strings.Join(sb.joinExprs[i], " AND "))
+			operator := sb.joinExprsOperator[i]
+
+			sep := " AND "
+			if operator == "USING" {
+				sep = ", "
+			}
+
+			buf.WriteRune(' ')
+			buf.WriteString(operator)
+			buf.WriteRune(' ')
+			buf.WriteString(strings.Join(sb.joinExprs[i], sep))
 		}
 	}
 

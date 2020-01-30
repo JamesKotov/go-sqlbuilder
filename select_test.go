@@ -92,6 +92,46 @@ func ExampleSelectBuilder_join() {
 	// [1 2 5 %Du 86400]
 }
 
+func ExampleSelectBuilder_arrayJoin() {
+	sb := NewSelectBuilder()
+	sb.Select("u.id", "u.name", "c.type", "p.nickname")
+	sb.From("user u")
+	sb.JoinWithOption(ArrayJoin, "range(30) AS n")
+	sb.JoinWithOption(RightOuterJoin, "person p",
+		"u.id = p.user_id",
+		sb.Like("p.surname", "%Du"),
+	)
+	sb.Where(
+		"u.modified_at > u.created_at + " + sb.Var(86400), // It's allowed to write arbitrary SQL.
+	)
+
+	sql, args := sb.Build()
+	fmt.Println(sql)
+	fmt.Println(args)
+
+	// Output:
+	// SELECT u.id, u.name, c.type, p.nickname FROM user u ARRAY JOIN range(30) AS n RIGHT OUTER JOIN person p ON u.id = p.user_id AND p.surname LIKE ? WHERE u.modified_at > u.created_at + ?
+	// [%Du 86400]
+}
+
+func ExampleSelectBuilder_allInnerJoin() {
+	sb := NewSelectBuilder()
+	sb.Select("u.id", "u.name", "c.type", "p.nickname")
+	sb.From("user u")
+	sb.JoinWithOptionUsing(AllInnerJoin, "events", "col1", "col2")
+	sb.Where(
+		"u.modified_at > u.created_at + " + sb.Var(86400), // It's allowed to write arbitrary SQL.
+	)
+
+	sql, args := sb.Build()
+	fmt.Println(sql)
+	fmt.Println(args)
+
+	// Output:
+	// SELECT u.id, u.name, c.type, p.nickname FROM user u ALL INNER JOIN events USING col1, col2 WHERE u.modified_at > u.created_at + ?
+	// [86400]
+}
+
 func ExampleSelectBuilder_limit_offset() {
 	sb := NewSelectBuilder()
 	sb.Select("*")
