@@ -132,6 +132,21 @@ func ExampleSelectBuilder_allInnerJoin() {
 	// [86400]
 }
 
+func ExampleSelectBuilder_With() {
+	sb := NewSelectBuilder()
+	sb.With(sb.As("toDate(timestamp)", "date"))
+	sb.Select("id", "date", "event")
+	sb.From("events")
+	sb.Where(sb.LessEqualThan("date", Raw("today()")))
+	sql, args := sb.Build()
+	fmt.Println(sql)
+	fmt.Println(args)
+
+	// Output:
+	// WITH (toDate(timestamp) AS date) SELECT id, date, event FROM events WHERE date <= today()
+	// []
+}
+
 func ExampleSelectBuilder_limit_offset() {
 	sb := NewSelectBuilder()
 	sb.Select("*")

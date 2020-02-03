@@ -48,6 +48,7 @@ type SelectBuilder struct {
 
 	distinct          bool
 	tables            []string
+	withCols          []string
 	selectCols        []string
 	joinOptions       []JoinOption
 	joinTables        []string
@@ -67,6 +68,12 @@ type SelectBuilder struct {
 // Distinct marks this SELECT as DISTINCT.
 func (sb *SelectBuilder) Distinct() *SelectBuilder {
 	sb.distinct = true
+	return sb
+}
+
+// Select sets columns in WITH.
+func (sb *SelectBuilder) With(col ...string) *SelectBuilder {
+	sb.withCols = col
 	return sb
 }
 
@@ -221,6 +228,13 @@ func (sb *SelectBuilder) Build() (sql string, args []interface{}) {
 // They can be used in `DB#Query` of package `database/sql` directly.
 func (sb *SelectBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}) (sql string, args []interface{}) {
 	buf := &bytes.Buffer{}
+
+	if len(sb.withCols) > 0 {
+		buf.WriteString("WITH (")
+		buf.WriteString(strings.Join(sb.withCols, ", "))
+		buf.WriteString(") ")
+	}
+
 	buf.WriteString("SELECT ")
 
 	if sb.distinct {
