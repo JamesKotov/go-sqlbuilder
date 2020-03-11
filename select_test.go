@@ -147,6 +147,18 @@ func ExampleSelectBuilder_With() {
 	// []
 }
 
+func ExampleSelectBuilder_WithoutFrom() {
+	sb := NewSelectBuilder()
+	sb.Select("0")
+	sql, args := sb.Build()
+	fmt.Println(sql)
+	fmt.Println(args)
+
+	// Output:
+	// SELECT 0
+	// []
+}
+
 func ExampleSelectBuilder_limit_offset() {
 	sb := NewSelectBuilder()
 	sb.Select("*")

@@ -242,8 +242,11 @@ func (sb *SelectBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{
 	}
 
 	buf.WriteString(strings.Join(sb.selectCols, ", "))
-	buf.WriteString(" FROM ")
-	buf.WriteString(strings.Join(sb.tables, ", "))
+
+	if len(sb.tables) > 0 {
+		buf.WriteString(" FROM ")
+		buf.WriteString(strings.Join(sb.tables, ", "))
+	}
 
 	for i := range sb.joinTables {
 		if option := sb.joinOptions[i]; option != "" {
