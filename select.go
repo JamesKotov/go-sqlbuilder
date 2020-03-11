@@ -61,6 +61,8 @@ type SelectBuilder struct {
 	order             string
 	limit             int
 	offset            int
+	limitVar          string
+	offsetVar         string
 
 	args *Args
 }
@@ -201,6 +203,18 @@ func (sb *SelectBuilder) Offset(offset int) *SelectBuilder {
 	return sb
 }
 
+// Limit sets the LIMIT in SELECT.
+func (sb *SelectBuilder) LimitVar(limit string) *SelectBuilder {
+	sb.limitVar = limit
+	return sb
+}
+
+// Offset sets the LIMIT offset in SELECT.
+func (sb *SelectBuilder) OffsetVar(offset string) *SelectBuilder {
+	sb.offsetVar = offset
+	return sb
+}
+
 // As returns an AS expression.
 func (sb *SelectBuilder) As(name, alias string) string {
 	return fmt.Sprintf("%s AS %s", name, alias)
@@ -297,14 +311,24 @@ func (sb *SelectBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{
 		}
 	}
 
-	if sb.limit >= 0 {
+	if sb.limitVar != "" {
 		buf.WriteString(" LIMIT ")
-		buf.WriteString(strconv.Itoa(sb.limit))
-	}
-	if MySQL == flavor && sb.limit >= 0 || PostgreSQL == flavor {
-		if sb.offset >= 0 {
+		buf.WriteString(sb.limitVar)
+		if sb.offsetVar != "" {
 			buf.WriteString(" OFFSET ")
-			buf.WriteString(strconv.Itoa(sb.offset))
+			buf.WriteString(sb.offsetVar)
+		}
+	} else {
+
+		if sb.limit >= 0 {
+			buf.WriteString(" LIMIT ")
+			buf.WriteString(strconv.Itoa(sb.limit))
+		}
+		if MySQL == flavor && sb.limit >= 0 || PostgreSQL == flavor {
+			if sb.offset >= 0 {
+				buf.WriteString(" OFFSET ")
+				buf.WriteString(strconv.Itoa(sb.offset))
+			}
 		}
 	}
 

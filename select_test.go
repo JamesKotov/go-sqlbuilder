@@ -209,6 +209,19 @@ func ExampleSelectBuilder_limit_offset() {
 	mySQL, _ = sb.BuildWithFlavor(MySQL)
 	fmt.Println(mySQL)
 
+	// fifth test case: limit and offset with variables from request
+	sb = NewSelectBuilder()
+	sb.Select("*", sb.As("COUNT(user)", "users_count"))
+	sb.From("user")
+	sb.LimitVar("(10 * users_count)")
+	sb.OffsetVar("(1 * users_count)")
+
+	pgSQL, _ = sb.BuildWithFlavor(PostgreSQL)
+	fmt.Println(pgSQL)
+
+	mySQL, _ = sb.BuildWithFlavor(MySQL)
+	fmt.Println(mySQL)
+
 	// Output:
 	// SELECT * FROM user
 	// SELECT * FROM user
@@ -218,6 +231,8 @@ func ExampleSelectBuilder_limit_offset() {
 	// SELECT * FROM user LIMIT 0 OFFSET 0
 	// SELECT * FROM user LIMIT 0
 	// SELECT * FROM user LIMIT 0
+	// SELECT *, COUNT(user) AS users_count FROM user LIMIT (10 * users_count) OFFSET (1 * users_count)
+	// SELECT *, COUNT(user) AS users_count FROM user LIMIT (10 * users_count) OFFSET (1 * users_count)
 }
 
 func ExampleSelectBuilder_varInCols() {
