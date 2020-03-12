@@ -132,6 +132,42 @@ func ExampleSelectBuilder_allInnerJoin() {
 	// [86400]
 }
 
+func ExampleSelectBuilder_allLeftJoin() {
+	sb := NewSelectBuilder()
+	sb.Select("u.id", "u.name", "c.type", "p.nickname")
+	sb.From("user u")
+	sb.JoinWithOptionUsing(AllLeftJoin, "events", "col1", "col2")
+	sb.Where(
+		"u.modified_at > u.created_at + " + sb.Var(86400), // It's allowed to write arbitrary SQL.
+	)
+
+	sql, args := sb.Build()
+	fmt.Println(sql)
+	fmt.Println(args)
+
+	// Output:
+	// SELECT u.id, u.name, c.type, p.nickname FROM user u ALL LEFT JOIN events USING col1, col2 WHERE u.modified_at > u.created_at + ?
+	// [86400]
+}
+
+func ExampleSelectBuilder_allRightJoin() {
+	sb := NewSelectBuilder()
+	sb.Select("u.id", "u.name", "c.type", "p.nickname")
+	sb.From("user u")
+	sb.JoinWithOptionUsing(AllRightJoin, "events", "col1", "col2")
+	sb.Where(
+		"u.modified_at > u.created_at + " + sb.Var(86400), // It's allowed to write arbitrary SQL.
+	)
+
+	sql, args := sb.Build()
+	fmt.Println(sql)
+	fmt.Println(args)
+
+	// Output:
+	// SELECT u.id, u.name, c.type, p.nickname FROM user u ALL RIGHT JOIN events USING col1, col2 WHERE u.modified_at > u.created_at + ?
+	// [86400]
+}
+
 func ExampleSelectBuilder_With() {
 	sb := NewSelectBuilder()
 	sb.With(sb.As("toDate(timestamp)", "date"))

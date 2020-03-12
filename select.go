@@ -16,8 +16,10 @@ type JoinOption string
 // Join options.
 const (
 	LeftJoin       JoinOption = "LEFT"
+	AllLeftJoin    JoinOption = "ALL LEFT"
 	LeftOuterJoin  JoinOption = "LEFT OUTER"
 	RightJoin      JoinOption = "RIGHT"
+	AllRightJoin   JoinOption = "ALL RIGHT"
 	RightOuterJoin JoinOption = "RIGHT OUTER"
 	FullJoin       JoinOption = "FULL"
 	FullOuterJoin  JoinOption = "FULL OUTER"
